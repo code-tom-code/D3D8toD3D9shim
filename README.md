@@ -15,7 +15,7 @@ Why would you want to use this shim, when Windows already supports running Direc
 
 If you're just interested in using this proxy DLL to shim your D3D8 games and programs to use D3D9, then all you need is the [d3d8.dll](Release/d3d8.dll) binary. Just download it, and place it in the directory directly next to the EXE you want to proxy. You'll know that it's picked it up if when you launch your game or program, you should now see a message box pop up that says that the proxying was successful.
 
-Note that although I've built this binary in Release x86 mode, with the CRT statically-linked, and using the v141_xp toolset with no SSE requirements, I still haven't actually tested this DLL on 
+Note that although I've built this binary in Release x86 mode, with the CRT statically-linked, and using the v141_xp toolset with no SSE requirements, I still cannot guarantee that this DLL will work for you on your system.
 
 # For Developers
 

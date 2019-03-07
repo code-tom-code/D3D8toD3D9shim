@@ -28,6 +28,7 @@
 
 // Comment out this to disable D3DX disassembly (probably will be more correct and more easily readable than the custom formatted disassembly from the ShaderAnalysis library, better for debugging, but requires the D3DX9 library).
 // This feature is only for debugging and is not needed for proper operation whatsoever!
+// Note that if you enable this feature, then you will require the D3DX9 header files and libraries installed (get these from the DirectX SDK (June 2010) version here: https://www.microsoft.com/en-us/download/details.aspx?id=6812 ) and properly added to your Visual Studio include and linker directories.
 #ifdef DISASM_SHADER
 	// #define ADDITIONAL_D3DX_DISASM 1
 #endif

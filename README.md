@@ -2,7 +2,12 @@
 
 This proxy DLL acts as a shim to convert calls between the Direct3D8 API to the Direct3D9 API (this is a drop-in proxy replacement for Microsoft's official **d3d8.dll**). This project is intended to be a fully working API shim for all of Direct3D 8.0 and Direct3D 8.1. It is intended to work with real games and other programs, and eventually should support a high level of compatibility with a wide range of existing D3D8 games and programs. This shim uses the same hardware acceleration as the programs underlying it, and there is no software emulation of D3D8 features, instead all existing D3D8 features and shaders get converted to D3D9 features and shaders internally and will run at their full, non-emulated speed.
 
-Why would you want to use this shim, when Windows already supports running Direct3D8 games and programs on pretty much all modern versions of Windows? I personally use this shim to make various games compatible with other things that require D3D9 support, such as Microsoft's PIX and Intel's GPA. This shim will also make your D3D8 games and programs work with any program that tries to hook **d3d9.dll** to inject overlays or to perform video capture or screenshotting functionality.
+Why would you want to use this shim, when Windows already supports running Direct3D8 games and programs on pretty much all modern versions of Windows? I personally use this shim to make various games compatible with other things that require D3D9 support, such as Microsoft's PIX, Intel's GPA, and Windows' Remote Desktop Client (at least for a Windows 7 host it seems to only support D3DDEVTYPE_HAL over remote desktop with D3D9, but not D3D8). This shim will also make your D3D8 games and programs work with any program that tries to hook **d3d9.dll** to draw screen overlays or to perform video capture or screenshotting functionality.
+
+## System Requirements
+
+Requires Windows XP or higher (tested and confirmed working on Windows XP SP3).
+Also requires a Direct3D 8.0 or better graphics card.
 
 ## Known Tested & Supported Products
 

@@ -25,6 +25,8 @@ Note that although I've built this binary in Release x86 mode, with the CRT stat
 
 ## Getting Started (Developers)
 
+For anybody interested in understanding this code, or who's curious about how this shim works internally, the [Developer Notes page](DeveloperNotes.md) would be a good place to start reading.
+
 Download the repo and open **d3d8tod3d9shim.sln** in Visual Studio 2017 or higher (or if you really want to you could hack the project and solution files to use an earlier version of Visual Studio, this codebase should be compatible all the way back to Visual Studio 2003).
 
 ### Prerequisites

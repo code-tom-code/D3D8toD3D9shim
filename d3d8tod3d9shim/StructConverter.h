@@ -37,6 +37,45 @@
 // D3DPRASTERCAPS_PAT
 // D3DVTXPCAPS_NO_VSDT_UBYTE4
 
+/* Supported shader versions:
+|**Direct3D Version**   |**7.0**|**8.0**|**8.0a**|**8.1**|**9.0**|**9.0a**|**9.0b**|**9.0c**|**10.0**|**10.1**|**11.0**                           |
+|-----------------------|-------|-------|--------|-------|-------|--------|--------|--------|--------|--------|-----------------------------------|
+|**Vertex Shaders**     |       |       |        |       |       |        |        |        |        |        |                                   |
+|                       |       |vs_1_0 |vs_1_0  |vs_1_0 |       |        |        |        |        |        |                                   |
+|                       |       |       |        |vs_1_1 |vs_1_1 |vs_1_1  |vs_1_1  |vs_1_1  |        |        |                                   |
+|                       |       |       |        |       |vs_2_0 |vs_2_0  |vs_2_0  |vs_2_0  |        |        |vs_4_0_level_9_0 + vs_4_0_level_9_1|
+|                       |       |       |        |       |       |vs_2_a  |vs_2_a  |vs_2_a  |        |        |vs_4_0_level_9_3                   |
+|                       |       |       |        |       |       |        |        |vs_3_0  |        |        |                                   |
+|                       |       |       |        |       |       |        |        |        |vs_4_0  |vs_4_0  |vs_4_0                             |
+|                       |       |       |        |       |       |        |        |        |        |vs_4_1  |vs_4_1                             |
+|                       |       |       |        |       |       |        |        |        |        |        |vs_5_0                             |
+|**Pixel Shaders**      |       |       |        |       |       |        |        |        |        |        |                                   |
+|                       |       |ps_1_0 |ps_1_0  |ps_1_0 |       |        |        |        |        |        |                                   |
+|                       |       |       |ps_1_1  |ps_1_1 |ps_1_1 |ps_1_1  |ps_1_1  |ps_1_1  |        |        |                                   |
+|                       |       |       |ps_1_2  |ps_1_2 |ps_1_2 |ps_1_2  |ps_1_2  |ps_1_2  |        |        |                                   |
+|                       |       |       |ps_1_3  |ps_1_3 |ps_1_3 |ps_1_3  |ps_1_3  |ps_1_3  |        |        |                                   |
+|                       |       |       |        |ps_1_4 |ps_1_4 |ps_1_4  |ps_1_4  |ps_1_4  |        |        |                                   |
+|                       |       |       |        |       |ps_2_0 |ps_2_0  |ps_2_0  |ps_2_0  |        |        |ps_4_0_level_9_0 + ps_4_0_level_9_1|
+|                       |       |       |        |       |       |ps_2_a  |ps_2_a  |ps_2_a  |        |        |ps_4_0_level_9_3                   |
+|                       |       |       |        |       |       |        |ps_2_b  |ps_2_b  |        |        |ps_4_0_level_9_3                   |
+|                       |       |       |        |       |       |        |        |ps_3_0  |        |        |                                   |
+|                       |       |       |        |       |       |        |        |        |ps_4_0  |ps_4_0  |ps_4_0                             |
+|                       |       |       |        |       |       |        |        |        |        |ps_4_1  |ps_4_1                             |
+|                       |       |       |        |       |       |        |        |        |        |        |ps_5_0                             |
+|**Geometry Shaders**   |       |       |        |       |       |        |        |        |        |        |                                   |
+|                       |       |       |        |       |       |        |        |        |gs_4_0  |gs_4_0  |gs_4_0                             |
+|                       |       |       |        |       |       |        |        |        |        |gs_4_1  |gs_4_1                             |
+|                       |       |       |        |       |       |        |        |        |        |        |gs_5_0                             |
+|**Compute Shaders**    |       |       |        |       |       |        |        |        |        |        |                                   |
+|                       |       |       |        |       |       |        |        |        |cs_4_0  |cs_4_0  |cs_4_0                             |
+|                       |       |       |        |       |       |        |        |        |        |cs_4_1  |cs_4_1                             |
+|                       |       |       |        |       |       |        |        |        |        |        |cs_5_0                             |
+|**Hull Tess Shaders**  |       |       |        |       |       |        |        |        |        |        |                                   |
+|                       |       |       |        |       |       |        |        |        |        |        |hs_5_0                             |
+|**Domain Tess Shaders**|       |       |        |       |       |        |        |        |        |        |                                   |
+|                       |       |       |        |       |       |        |        |        |        |        |ds_5_0                             |
+*/
+
 static inline void ConvertD3DADAPTER_IDENTIFIER9to8(D3DADAPTER_IDENTIFIER8& outIdentifier, const D3DADAPTER_IDENTIFIER9& inIdentifier)
 {
 	memcpy(&outIdentifier.Driver, &inIdentifier.Driver, sizeof(outIdentifier.Driver) );

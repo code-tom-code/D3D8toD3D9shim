@@ -7,6 +7,7 @@ Why would you want to use this shim, when Windows already supports running Direc
 ## Known Tested & Supported Products
 - Advent Rising
 - The Elder Scrolls III: Morrowind (Game of the Year edition)
+- Unreal II: The Awakening
 - Unreal Tournament 2004
 
 # For Users

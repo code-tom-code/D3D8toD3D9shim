@@ -1,4 +1,4 @@
-# D3D8toD3D9shim
+# D3D8 to D3D9 Shim
 
 This proxy DLL acts as a shim to convert calls between the Direct3D8 API to the Direct3D9 API (this is a drop-in proxy replacement for Microsoft's official **d3d8.dll**). This project is intended to be a fully working API shim for all of Direct3D 8.0 and Direct3D 8.1. It is intended to work with real games and other programs, and eventually should support a high level of compatibility with a wide range of existing D3D8 games and programs. This shim uses the same hardware acceleration as the programs underlying it, and there is no software emulation of D3D8 features, instead all existing D3D8 features and shaders get converted to D3D9 features and shaders internally.
 

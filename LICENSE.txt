@@ -1,4 +1,4 @@
-Copyright (c) March 2017 (first work) / February 2019 (open-sourced on GitHub) by Tom Lopes
+Copyright (c) March 2017 (first work) / March 2019 (open-sourced on GitHub) by Tom Lopes
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages

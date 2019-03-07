@@ -1,0 +1,7 @@
+LIBRARY d3d8
+EXPORTS
+DebugSetMute=__E__0__ @4
+Direct3D8EnableMaximizedWindowedModeShim=__E__1__ @1
+Direct3DCreate8=__E__2__ @5
+ValidatePixelShader=__E__3__ @2
+ValidateVertexShader=__E__4__ @3

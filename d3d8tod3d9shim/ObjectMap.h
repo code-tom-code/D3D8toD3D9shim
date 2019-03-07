@@ -1,0 +1,67 @@
+#pragma once
+
+struct IDirect3D8Hook;
+struct IDirect3D9;
+struct IDirect3DBaseTexture8Hook;
+struct IDirect3DBaseTexture9;
+struct IDirect3DCubeTexture8Hook;
+struct IDirect3DCubeTexture9;
+struct IDirect3DDevice8Hook;
+struct IDirect3DDevice9;
+struct IDirect3DIndexBuffer8Hook;
+struct IDirect3DIndexBuffer9;
+struct IDirect3DPixelShader8Hook;
+struct IDirect3DPixelShader9;
+struct IDirect3DResource8Hook;
+struct IDirect3DResource9;
+struct IDirect3DStateBlock8Hook;
+struct IDirect3DStateBlock9;
+struct IDirect3DSurface8Hook;
+struct IDirect3DSurface9;
+struct IDirect3DSwapChain8Hook;
+struct IDirect3DSwapChain9;
+struct IDirect3DTexture8Hook;
+struct IDirect3DTexture9;
+struct IDirect3DVertexBuffer8Hook;
+struct IDirect3DVertexBuffer9;
+struct IDirect3DVertexShader8Hook;
+struct IDirect3DVertexShader9;
+struct IDirect3DVolume8Hook;
+struct IDirect3DVolume9;
+struct IDirect3DVolumeTexture8Hook;
+struct IDirect3DVolumeTexture9;
+
+void InitObjectMap();
+void DestroyObjectMap();
+
+IDirect3D8Hook* ObjLookupCreate(IDirect3D9* ptr);
+IDirect3DDevice8Hook* ObjLookupCreate(IDirect3DDevice9* ptr, IDirect3D8Hook* parent);
+IDirect3DBaseTexture8Hook* ObjLookupCreate(IDirect3DBaseTexture9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DCubeTexture8Hook* ObjLookupCreate(IDirect3DCubeTexture9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DIndexBuffer8Hook* ObjLookupCreate(IDirect3DIndexBuffer9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DPixelShader8Hook* ObjLookupCreate(IDirect3DPixelShader9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DResource8Hook* ObjLookupCreate(IDirect3DResource9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DStateBlock8Hook* ObjLookupCreate(IDirect3DStateBlock9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DSurface8Hook* ObjLookupCreate(IDirect3DSurface9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DSwapChain8Hook* ObjLookupCreate(IDirect3DSwapChain9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DTexture8Hook* ObjLookupCreate(IDirect3DTexture9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DVertexBuffer8Hook* ObjLookupCreate(IDirect3DVertexBuffer9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DVertexShader8Hook* ObjLookupCreate(IDirect3DVertexShader9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DVolume8Hook* ObjLookupCreate(IDirect3DVolume9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DVolumeTexture8Hook* ObjLookupCreate(IDirect3DVolumeTexture9* ptr, IDirect3DDevice8Hook* parent);
+
+void ObjDestroy(IDirect3D8Hook* ptr);
+void ObjDestroy(IDirect3DDevice8Hook* ptr);
+void ObjDestroy(IDirect3DBaseTexture8Hook* ptr);
+void ObjDestroy(IDirect3DCubeTexture8Hook* ptr);
+void ObjDestroy(IDirect3DIndexBuffer8Hook* ptr);
+void ObjDestroy(IDirect3DPixelShader8Hook* ptr);
+void ObjDestroy(IDirect3DResource8Hook* ptr);
+void ObjDestroy(IDirect3DStateBlock8Hook* ptr);
+void ObjDestroy(IDirect3DSurface8Hook* ptr);
+void ObjDestroy(IDirect3DSwapChain8Hook* ptr);
+void ObjDestroy(IDirect3DTexture8Hook* ptr);
+void ObjDestroy(IDirect3DVertexBuffer8Hook* ptr);
+void ObjDestroy(IDirect3DVertexShader8Hook* ptr);
+void ObjDestroy(IDirect3DVolume8Hook* ptr);
+void ObjDestroy(IDirect3DVolumeTexture8Hook* ptr);

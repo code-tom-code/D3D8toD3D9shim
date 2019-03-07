@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FFDB895B-11C0-4996-8C2E-194D85FFFAE6}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Software_d3d9</RootNamespace>
+    <ProjectName>d3d8</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141_xp</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;D3D9PROXYDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;D3D9PROXYDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <StringPooling>true</StringPooling>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="d3d8.cpp" />
+    <ClCompile Include="IDirect3D8Hook.cpp" />
+    <ClCompile Include="IDirect3DBaseTexture8Hook.cpp" />
+    <ClCompile Include="IDirect3DCubeTexture8Hook.cpp" />
+    <ClCompile Include="IDirect3DDevice8Hook.cpp" />
+    <ClCompile Include="IDirect3DIndexBuffer8Hook.cpp" />
+    <ClCompile Include="IDirect3DPixelShader8Hook.cpp" />
+    <ClCompile Include="IDirect3DResource8Hook.cpp" />
+    <ClCompile Include="IDirect3DStateBlock8Hook.cpp" />
+    <ClCompile Include="IDirect3DSurface8Hook.cpp" />
+    <ClCompile Include="IDirect3DSwapChain8Hook.cpp" />
+    <ClCompile Include="IDirect3DTexture8Hook.cpp" />
+    <ClCompile Include="IDirect3DVertexBuffer8Hook.cpp" />
+    <ClCompile Include="IDirect3DVertexShader8Hook.cpp" />
+    <ClCompile Include="IDirect3DVolume8Hook.cpp" />
+    <ClCompile Include="IDirect3DVolumeTexture8Hook.cpp" />
+    <ClCompile Include="ObjectMap.cpp" />
+    <ClCompile Include="ShaderAnalysis.cpp" />
+    <ClCompile Include="StructConverter.cpp" />
+    <None Include="Source.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="d3d8capsmod.h" />
+    <ClInclude Include="d3d8mod.h" />
+    <ClInclude Include="d3d8include.h" />
+    <ClInclude Include="d3d8typesmod.h" />
+    <ClInclude Include="d3d9include.h" />
+    <ClInclude Include="GlobalToggles.h" />
+    <ClInclude Include="IDirect3D8Hook.h" />
+    <ClInclude Include="IDirect3DBaseTexture8Hook.h" />
+    <ClInclude Include="IDirect3DCubeTexture8Hook.h" />
+    <ClInclude Include="IDirect3DDevice8Hook.h" />
+    <ClInclude Include="IDirect3DIndexBuffer8Hook.h" />
+    <ClInclude Include="IDirect3DPixelShader8Hook.h" />
+    <ClInclude Include="IDirect3DResource8Hook.h" />
+    <ClInclude Include="IDirect3DStateBlock8Hook.h" />
+    <ClInclude Include="IDirect3DSurface8Hook.h" />
+    <ClInclude Include="IDirect3DSwapChain8Hook.h" />
+    <ClInclude Include="IDirect3DTexture8Hook.h" />
+    <ClInclude Include="IDirect3DVertexBuffer8Hook.h" />
+    <ClInclude Include="IDirect3DVertexShader8Hook.h" />
+    <ClInclude Include="IDirect3DVolume8Hook.h" />
+    <ClInclude Include="IDirect3DVolumeTexture8Hook.h" />
+    <ClInclude Include="ObjectMap.h" />
+    <ClInclude Include="ShaderAnalysis.h" />
+    <ClInclude Include="ShaderBase.h" />
+    <ClInclude Include="StructConverter.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

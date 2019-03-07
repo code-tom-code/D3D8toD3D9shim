@@ -5,10 +5,8 @@ This proxy DLL acts as a shim to convert calls between the Direct3D8 API to the 
 Why would you want to use this shim, when Windows already supports running Direct3D8 games and programs on pretty much all modern versions of Windows? I personally use this shim to make various games compatible with other things that require D3D9 support, such as Microsoft's PIX and Intel's GPA. This shim will also make your D3D8 games and programs work with any program that tries to hook **d3d9.dll** to inject overlays or to perform video capture or screenshotting functionality.
 
 ## Known Tested & Supported Products
-- Advent Rising
-- The Elder Scrolls III: Morrowind (Game of the Year edition)
-- Unreal II: The Awakening
-- Unreal Tournament 2004
+
+See our [Supported Products and Known Issues](SupportedProductsAndKnownIssues.md) page.
 
 # For Users
 

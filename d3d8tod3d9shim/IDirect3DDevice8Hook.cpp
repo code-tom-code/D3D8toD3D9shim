@@ -1024,8 +1024,62 @@ static inline void CopyModifyVertShaderBytecode(DWORD* pFunction, std::vector<DW
 			const unsigned numWriteOperations = writtenOutputReg.writeOperationsHistory.size();
 			const outputRegisterWriteTracker::outputRegisterWriteOperation& writeOperation = writtenOutputReg.writeOperationsHistory[numWriteOperations - 1];
 
-			// Change the dstParameter's write mask from whatever it was (less than 0xF) to write all channels (0xF)
-			*(DWORD* const)writeOperation.registerParameterToken |= D3DSP_WRITEMASK_ALL;
+			// Change the dstParameter's write mask from whatever it was (less than 0xF) to write all channels (0xF) by writing in the missing channels
+			switch (writtenOutputReg.componentChannelsWritten)
+			{
+			case 0x0: // Written nothing, needs to write everything!
+				*(DWORD* const)writeOperation.registerParameterToken |= D3DSP_WRITEMASK_ALL;
+				break;
+			case 0x1: // Just .x is written, we need to add .yzw
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
+				break;
+			case 0x2: // Just .y is written, we need to add .xzw
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
+				break;
+			case 0x3: // Just .xy is written, we need to add .zw
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
+				break;
+			case 0x4: // Just .z is written, we need to add .xyw
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_3);
+				break;
+			case 0x5: // Just .xz is written, we need to add .yw
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_3);
+				break;
+			case 0x6: // Just .yz is written, we need to add .xw
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_3);
+				break;
+			case 0x7: // .xyz is written, only .w is missing
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_3);
+				break;
+			case 0x8: // Just .w is written, we need to add .xyz
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2);
+				break;
+			case 0x9: // Just .xw is written, we need to add .yz
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2);
+				break;
+			case 0xA: // Just .yw is written, we need to add .xz
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_2);
+				break;
+			case 0xB: // .xyw is written, only .z is missing
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_2);
+				break;
+			case 0xC: // Just .zw is written, we need to add .xy
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1);
+				break;
+			case 0xD: // .xzw is written, only .y is missing
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1);
+				break;
+			case 0xE: // .yzw is written, only .x is missing
+				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0);
+				break;
+			case 0xF: // Should never be here, but do nothing!
+#ifdef _DEBUG
+				__debugbreak();
+#else
+				__assume(0);
+#endif
+				break;
+			}
 		}
 	}
 
@@ -1180,6 +1234,8 @@ arrivedAtFirstInstruction:
 					break;
 				default:
 					*(DWORD* const)srcParameter0 &= (~D3DSP_SWIZZLE_MASK); // Clear the existing bad (non-replicate) swizzle
+
+					// TODO: Is it correct to use .wwww here? Shouldn't we be using one of the channels that are actually know to be used in the source swizzle?
 					*(DWORD* const)srcParameter0 |= D3DSP_REPLICATEALPHA; // Replace with the .wwww replicate swizzle
 					break;
 				}

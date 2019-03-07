@@ -134,3 +134,21 @@ Unlike D3D9, which embeds shader Immediate Constants into its shader bytecode st
 ## Vertex Declaration Differences
 
 The intent behind [D3D8 Vertex Declarations](https://github.com/code-tom-code/D3D8toD3D9shim/blob/master/d3d8tod3d9shim/originalD3D8/d3d8types.h#L610) and [D3D9 Vertex Declarations](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/programming-one-or-more-streams) is the same, however the two come in very different formats. Additionally, as mentioned in [this document](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/converting-to-directx-9#vertex-declaration-changes), the design of the D3D9 API has since decoupled Vertex Declarations from Vertex Shaders entirely, and the two can now be created and used separately from one another (instead of being tied to CreateVertexShader() as in D3D8). This means that we'll need to convert between [D3D8 Vertex Declarations](https://github.com/code-tom-code/D3D8toD3D9shim/blob/master/d3d8tod3d9shim/originalD3D8/d3d8types.h#L610) and [D3D9 Vertex Declarations](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/programming-one-or-more-streams). This is possible because [D3D9 Vertex Declarations](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/programming-one-or-more-streams) are a strict superset of the functionality defined in the [D3D8 Vertex Declarations](https://github.com/code-tom-code/D3D8toD3D9shim/blob/master/d3d8tod3d9shim/originalD3D8/d3d8types.h#L610). Additionally, it's worth noting that while the [D3D8 Vertex Declarations](https://github.com/code-tom-code/D3D8toD3D9shim/blob/master/d3d8tod3d9shim/originalD3D8/d3d8types.h#L610) use a [custom DWORD token format](https://github.com/code-tom-code/D3D8toD3D9shim/blob/master/d3d8tod3d9shim/originalD3D8/d3d8types.h#L610) with bit-packing, the [D3D9 Vertex Declarations](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/programming-one-or-more-streams) have changed to using a much more readable struct-based format based on a series of [D3DVERTEXELEMENT9](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dvertexelement9) structs.
+
+## Sampler State Differences
+
+As described in [this document](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/converting-to-directx-9#setsamplerstate-changes), D3D9 has moved several D3D8 Texture Stage State's from [SetTextureStageState()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nf-d3d9-idirect3ddevice9-settexturestagestate) into a new [SetSamplerState() function](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nf-d3d9-idirect3ddevice9-setsamplerstate). Specifically those affected are listed below:
+
+|**D3D8 [D3DTEXTURESTAGESTATETYPE](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dtexturestagestatetype)**|**D3D9 [D3DSAMPLERSTATETYPE](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype)**|
+|---|---|
+| D3DTSS_ADDRESSU | [D3DSAMP_ADDRESSU](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants) |
+| D3DTSS_ADDRESSV | [D3DSAMP_ADDRESSV](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_ADDRESSW | [D3DSAMP_ADDRESSW](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_BORDERCOLOR | [D3DSAMP_BORDERCOLOR](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_MAGFILTER | [D3DSAMP_MAGFILTER](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_MINFILTER | [D3DSAMP_MINFILTER](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_MIPFILTER | [D3DSAMP_MIPFILTER](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_MIPMAPLODBIAS | [D3DSAMP_MIPMAPLODBIAS](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_MAXMIPLEVEL | [D3DSAMP_MAXMIPLEVEL](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+| D3DTSS_MAXANISOTROPY | [D3DSAMP_MAXANISOTROPY](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
+

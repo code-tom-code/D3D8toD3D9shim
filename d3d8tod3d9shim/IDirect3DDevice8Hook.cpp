@@ -472,12 +472,13 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::SetRenderSt
 	case d3d8::D3DRS_ZVISIBLE:
 	case d3d8::D3DRS_LINEPATTERN:
 	case d3d8::D3DRS_EDGEANTIALIAS:
-	case d3d8::D3DRS_PATCHSEGMENTS:
 		return S_OK; // No longer supported in d3d9, do nothing!
+	case d3d8::D3DRS_PATCHSEGMENTS:
+		return d3d9dev->SetNPatchMode(*(const float* const)&Value);
 	case d3d8::D3DRS_SOFTWAREVERTEXPROCESSING:
 		return d3d9dev->SetSoftwareVertexProcessing(Value); // TODO: Record this in state blocks
 	case d3d8::D3DRS_ZBIAS:
-		return d3d9dev->SetRenderState(D3DRS_DEPTHBIAS, Value);
+		return d3d9dev->SetRenderState(D3DRS_DEPTHBIAS, Value); // TODO: Convert from D3D8-style Depth Bias (integer) to D3D9-style Depth Bias (float)
 	default:
 		return d3d9dev->SetRenderState( (const D3DRENDERSTATETYPE)State, Value);
 	}
@@ -490,16 +491,19 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::GetRenderSt
 	case d3d8::D3DRS_ZVISIBLE:
 	case d3d8::D3DRS_LINEPATTERN:
 	case d3d8::D3DRS_EDGEANTIALIAS:
-	case d3d8::D3DRS_PATCHSEGMENTS:
 		if (pValue)
 			*pValue = 0;
 		return S_OK; // No longer supported in d3d9, do nothing!
+	case d3d8::D3DRS_PATCHSEGMENTS:
+		if (pValue)
+			*(float* const)pValue = d3d9dev->GetNPatchMode();
+		return S_OK;
 	case d3d8::D3DRS_SOFTWAREVERTEXPROCESSING:
 		if (pValue)
 			*pValue = d3d9dev->GetSoftwareVertexProcessing(); // TODO: Record this in state blocks
 		return S_OK;
 	case d3d8::D3DRS_ZBIAS:
-		return d3d9dev->GetRenderState(D3DRS_DEPTHBIAS, pValue);
+		return d3d9dev->GetRenderState(D3DRS_DEPTHBIAS, pValue); // TODO: Convert from D3D8-style Depth Bias (integer) to D3D9-style Depth Bias (float)
 	default:
 		return d3d9dev->GetRenderState( (const D3DRENDERSTATETYPE)State, pValue);
 	}

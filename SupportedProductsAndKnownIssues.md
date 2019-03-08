@@ -22,7 +22,8 @@ No known issues for this game.
 
 ## Unreal II: The Awakening (2003)
 
-- Character shadows seem to flicker (looks like some sort of Z or Stencil fighting)
+- ~~Character shadows seem to flicker (looks like some sort of Z or Stencil fighting).~~
+  - Fixed with [this commit](https://github.com/code-tom-code/D3D8toD3D9shim/commit/d5c4db265d6afd99274b3ca88de5f9aa8b419f3d#diff-645ba7daff8853ad6961c42181db1579).
 - Crash in game when changing resolutions.
   - Workaround: You can simply set the desired resolution without the shim, and the game will remember that resolution the next time you load up the game with the shim again.
 

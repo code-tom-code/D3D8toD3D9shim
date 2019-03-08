@@ -1643,11 +1643,15 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::ResourceMan
 
 COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::CreateImageSurface(THIS_ UINT Width,UINT Height,d3d8::D3DFORMAT Format,IDirect3DSurface8** ppSurface)
 {
+	// D3DPOOL_SCRATCH will return a surface that has identical characteristics to a surface created by the DirectX 8.x method CreateImageSurface.
+	// However, we're going to use the more compatible D3DPOOL_SYSTEMMEM instead.
+	// Source: https://docs.microsoft.com/en-us/windows/desktop/api/d3d9/nf-d3d9-idirect3ddevice9-createoffscreenplainsurface
+
 	if (!ppSurface)
-		return d3d9dev->CreateOffscreenPlainSurface(Width, Height, ConvertD3DFORMAT_8to9(Format), D3DPOOL_SCRATCH, NULL, NULL);
+		return d3d9dev->CreateOffscreenPlainSurface(Width, Height, ConvertD3DFORMAT_8to9(Format), D3DPOOL_SYSTEMMEM, NULL, NULL);
 
 	LPDIRECT3DSURFACE9 surf9 = NULL;
-	HRESULT ret = d3d9dev->CreateOffscreenPlainSurface(Width, Height, ConvertD3DFORMAT_8to9(Format), D3DPOOL_SCRATCH, &surf9, NULL);
+	HRESULT ret = d3d9dev->CreateOffscreenPlainSurface(Width, Height, ConvertD3DFORMAT_8to9(Format), D3DPOOL_SYSTEMMEM, &surf9, NULL);
 
 	IDirect3DSurface8Hook* surfhook = ObjLookupCreate(surf9, this);
 	*ppSurface = surfhook;
@@ -1659,13 +1663,44 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::CopyRects(T
 {
 	IDirect3DSurface8Hook* sourceSurfHook = dynamic_cast<IDirect3DSurface8Hook*>(pSourceSurface);
 	IDirect3DSurface8Hook* destSurfHook = dynamic_cast<IDirect3DSurface8Hook*>(pDestinationSurface);
-	// According to the D3D9 docs for UpdateSurface(), that is the closest function to D3D8's CopyRects(): https://msdn.microsoft.com/en-us/library/bb205857(VS.85).aspx
+
+	d3d8::D3DSURFACE_DESC sourceDesc = {};
+	d3d8::D3DSURFACE_DESC destDesc = {};
+	if (sourceSurfHook)
+		sourceSurfHook->GetDesc(&sourceDesc);
+	if (destSurfHook)
+		destSurfHook->GetDesc(&destDesc);
+
 	HRESULT hr = S_OK;
-	for (unsigned x = 0; x < cRects; ++x)
+
+	if (destDesc.Pool == D3DPOOL_DEFAULT && sourceDesc.Pool == D3DPOOL_SYSTEMMEM)
 	{
-		HRESULT temphr = d3d9dev->UpdateSurface(sourceSurfHook ? sourceSurfHook->GetUnderlyingSurface() : NULL, pSourceRectsArray ? pSourceRectsArray + x : NULL, destSurfHook ? destSurfHook->GetUnderlyingSurface() : NULL, pDestPointsArray ? pDestPointsArray + x : NULL);
-		if (FAILED(temphr) )
-			hr = temphr;
+		// According to the D3D9 docs for UpdateSurface(), that is the closest function to D3D8's CopyRects(): https://msdn.microsoft.com/en-us/library/bb205857(VS.85).aspx
+		if (cRects > 0 && pSourceRectsArray != NULL)
+		{
+			for (unsigned x = 0; x < cRects; ++x)
+			{
+				HRESULT temphr = d3d9dev->UpdateSurface(sourceSurfHook ? sourceSurfHook->GetUnderlyingSurface() : NULL, pSourceRectsArray ? pSourceRectsArray + x : NULL, destSurfHook ? destSurfHook->GetUnderlyingSurface() : NULL, pDestPointsArray ? pDestPointsArray + x : NULL);
+				if (FAILED(temphr) )
+					hr = temphr;
+			}
+			return hr;
+		}
+		else
+		{
+			hr = d3d9dev->UpdateSurface(sourceSurfHook ? sourceSurfHook->GetUnderlyingSurface() : NULL, NULL, destSurfHook ? destSurfHook->GetUnderlyingSurface() : NULL, pDestPointsArray ? pDestPointsArray : NULL);
+			return hr;
+		}
+	}
+	else if (destDesc.Pool == D3DPOOL_SYSTEMMEM && sourceDesc.Pool == D3DPOOL_DEFAULT && (sourceDesc.Usage & D3DUSAGE_RENDERTARGET) )
+	{
+		hr = d3d9dev->GetRenderTargetData(sourceSurfHook ? sourceSurfHook->GetUnderlyingSurface() : NULL, destSurfHook ? destSurfHook->GetUnderlyingSurface() : NULL);
+		return hr;
+	}
+	else
+	{
+		hr = d3d9dev->StretchRect(sourceSurfHook ? sourceSurfHook->GetUnderlyingSurface() : NULL, NULL, destSurfHook ? destSurfHook->GetUnderlyingSurface() : NULL, NULL, D3DTEXF_POINT);
+		return hr;
 	}
 
 	return hr;

@@ -17,8 +17,10 @@ No known issues for this game.
 
 ## The Elder Scrolls III: Morrowind (2002)
 
-- In the inventory, your character's paper doll model is rendered semitransparently where it shouldn't be, and the background is red instead of black
-- The minimap renders all black in "local map" mode, but the map does render correctly in "world map" mode
+- ~~In the inventory, your character's paper doll model is rendered semitransparently where it shouldn't be, and the background is red instead of black~~
+  - Fixed in [this commit](https://github.com/code-tom-code/D3D8toD3D9shim/commit/1362e8f7c4c4cff8920943c41d6e21d7462cf052#diff-645ba7daff8853ad6961c42181db1579).
+- ~~The minimap renders all black in "local map" mode, but the map does render correctly in "world map" mode~~
+  - Fixed in [this commit](https://github.com/code-tom-code/D3D8toD3D9shim/commit/1362e8f7c4c4cff8920943c41d6e21d7462cf052#diff-645ba7daff8853ad6961c42181db1579).
 
 ## Unreal II: The Awakening (2003)
 

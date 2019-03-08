@@ -31,7 +31,7 @@ Download the repo and open **d3d8tod3d9shim.sln** in Visual Studio 2017 or highe
 
 ### Prerequisites
 
-You will need to have Visual Studio 2017 or higher installed, both for building this project, and for runtime JIT as well.
+You will need to have Visual Studio 2017 or higher installed for building this project.
 `
 Get Visual Studio 2017 from Microsoft, it's free now for noncommercial use and it's still arguably the best IDE on Windows for C++ programming!
 `

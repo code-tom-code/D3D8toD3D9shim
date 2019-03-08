@@ -152,3 +152,16 @@ As described in [this document](https://docs.microsoft.com/en-us/windows/desktop
 | D3DTSS_MAXMIPLEVEL | [D3DSAMP_MAXMIPLEVEL](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
 | D3DTSS_MAXANISOTROPY | [D3DSAMP_MAXANISOTROPY](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3dsamplerstatetype#constants)|
 
+
+## Render State Differences
+
+D3D9 Changed some render states, as seen in the table below:
+
+|Datatype|State Name|Enum Value|Description|Notes|
+|--------|----------|----------|-----------|-----|
+|D3DLINEPATTERN|D3DRS_LINEPATTERN|10|`D3DLINEPATTERN`|This was removed due to line patterning support being removed from D3D9. Stippled line rendering support still exists in D3DX9's [ID3DXLine](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/id3dxline), but it is now emulated using textures.|
+|BOOL    |D3DRS_ZVISIBLE|30    |`TRUE to enable z checking`|This was removed due to being somewhat redundant with the [**D3DRS_ZENABLE**](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3drenderstatetype) render state|
+|BOOL    |D3DRS_EDGEANTIALIAS|40|`TRUE to enable edge antialiasing`|D3D9 removed support for edge-based antialiasing and now only supports [Full-Scene multisampled antialiasing](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/full-scene-antialiasing) via [**D3DRS_MULTISAMPLEANTIALIAS**](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3drenderstatetype)|
+|LONG    |D3DRS_ZBIAS|47|`LONG Z bias`|Replaced with the [**D3DRS_DEPTHBIAS**](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/d3drenderstatetype) render state. In D3D8 this was an integer value between 0 and 16 (where polygons with a higher Z-Bias value would appear in front of polygons with a lower Z-Bias value). In D3D9, [this was changed to be a float value](https://docs.microsoft.com/en-us/windows/desktop/direct3d9/depth-bias).|
+|FLOAT   |D3DRS_PATCHSEGMENTS|164|`Number of segments per edge when drawing patches`|Replaced with the [SetNPatchMode()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setnpatchmode) function.|
+|BOOL    |D3DRS_SOFTWAREVERTEXPROCESSING|153|`None`|Replaced with the [SetSoftwareVertexProcessing()](https://docs.microsoft.com/en-us/windows/desktop/api/d3d9helper/nf-d3d9helper-idirect3ddevice9-setsoftwarevertexprocessing) function.|

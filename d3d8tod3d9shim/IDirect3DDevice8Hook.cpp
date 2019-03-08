@@ -465,6 +465,25 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::GetClipPlan
 	return d3d9dev->GetClipPlane(Index, pPlane);
 }
 
+// Have our base bias be 1/(2^15) for the worst-case D15X1 depthbuffer format
+static const float depthBiasFScalar = -1.0f / (1 << 14);
+
+static inline const float ConvertD3D8ZBiasToD3D9DepthBias(const LONG zBias8)
+{
+	if (zBias8 == 0)
+		return 0.0f; // The most common case is that depth bias is disabled
+
+	return zBias8 * depthBiasFScalar;
+}
+
+static inline const LONG ConvertD3D9DepthBiasToD3D8ZBias(const float depthBias9)
+{
+	if (depthBias9 == 0.0f)
+		return 0; // The most common case is that depth bias is disabled
+
+	return (const LONG)(depthBias9 / depthBiasFScalar);
+}
+
 COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::SetRenderState(THIS_ d3d8::D3DRENDERSTATETYPE State, DWORD Value)
 {
 	switch (State)
@@ -477,8 +496,12 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::SetRenderSt
 		return d3d9dev->SetNPatchMode(*(const float* const)&Value);
 	case d3d8::D3DRS_SOFTWAREVERTEXPROCESSING:
 		return d3d9dev->SetSoftwareVertexProcessing(Value); // TODO: Record this in state blocks
-	case d3d8::D3DRS_ZBIAS:
-		return d3d9dev->SetRenderState(D3DRS_DEPTHBIAS, Value); // TODO: Convert from D3D8-style Depth Bias (integer) to D3D9-style Depth Bias (float)
+	case d3d8::D3DRS_ZBIAS: // Convert from D3D8-style Depth Bias (integer) to D3D9-style Depth Bias (float)
+	{
+		const LONG zBias8 = Value;
+		const float depthBias9 = ConvertD3D8ZBiasToD3D9DepthBias(zBias8);
+		return d3d9dev->SetRenderState(D3DRS_DEPTHBIAS, *(const DWORD* const)&depthBias9);
+	}
 	default:
 		return d3d9dev->SetRenderState( (const D3DRENDERSTATETYPE)State, Value);
 	}
@@ -502,8 +525,14 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::GetRenderSt
 		if (pValue)
 			*pValue = d3d9dev->GetSoftwareVertexProcessing(); // TODO: Record this in state blocks
 		return S_OK;
-	case d3d8::D3DRS_ZBIAS:
-		return d3d9dev->GetRenderState(D3DRS_DEPTHBIAS, pValue); // TODO: Convert from D3D8-style Depth Bias (integer) to D3D9-style Depth Bias (float)
+	case d3d8::D3DRS_ZBIAS: // Convert from D3D8-style Depth Bias (integer) to D3D9-style Depth Bias (float)
+	{
+		float depthBias9 = 0.0f;
+		HRESULT hr = d3d9dev->GetRenderState(D3DRS_DEPTHBIAS, (DWORD* const)&depthBias9);
+		if (pValue)
+			*pValue = ConvertD3D9DepthBiasToD3D8ZBias(depthBias9);
+		return hr;
+	}
 	default:
 		return d3d9dev->GetRenderState( (const D3DRENDERSTATETYPE)State, pValue);
 	}

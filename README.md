@@ -41,13 +41,14 @@ Get Visual Studio 2017 from Microsoft, it's free now for noncommercial use and i
 
 Open the **d3d8tod3d9shim.sln** solution in Visual Studio 2017 (or higher).
 Once the project and all associated files have finished loading/initializing, select the desired Solution Configuration for your target program.
-`
+
+```
 Currently supported targets are:
 Debug - Win32
 Release - Win32
+```
 
 Note that there are no x64 targets. This is because Direct3D8 was never supported for x64 (unlike [DirectDraw7](https://docs.microsoft.com/en-us/windows/desktop/api/ddraw/nn-ddraw-idirectdraw7), which *does* have an x64 implementation), and the DirectX8.1 SDK did not have x64 libraries to link against, and there are no x64 D3D8 programs in the wild to my knowledge.
-`
 
 If you run into any compilation errors with the C/C++ code, they're likely due to the language conformance setting in Visual Studio. This project was written without using many modern C/C++ features (basically the C++11 featureset), but also not necessarily conforming to any future strictness that may be added into the C++ standard.
 

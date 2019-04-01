@@ -1401,7 +1401,7 @@ static inline const bool ParseCustomOpcode(const D3DSHADER_INSTRUCTION_OPCODE_TY
 			break;
 		case D3DSPR_OUTPUT:
 		{
-			const DWORD* temp = &dstParameter.internal;
+			const DWORD* temp = &dstParameter.internalRawToken;
 			ResolveDstParameter<print, false>(temp, shaderInfo, uniqueTempRegistersUsed, outRegisterwriteTracker);
 		}
 			break;
@@ -1434,7 +1434,7 @@ static inline const bool ParseCustomOpcode(const D3DSHADER_INSTRUCTION_OPCODE_TY
 
 		// Print the register afterwards:
 		{
-			const DWORD* temp = &dstParameter.internal;
+			const DWORD* temp = &dstParameter.internalRawToken;
 			ResolveDstParameter<print, false>(temp, shaderInfo, uniqueTempRegistersUsed, outRegisterwriteTracker);
 		}
 	}
@@ -1941,6 +1941,7 @@ void outputRegisterWriteTracker::SetAddOrSkip(const D3DSHADER_PARAM_REGISTER_TYP
 	newWriteOperation.writeInstruction = _writeInstruction;
 	newWriteOperation.registerParameterToken = &dstParameter;
 	newWriteOperation.optionalRelativeAddressingDestParameterToken = optionalRelativeRegister;
+	newWriteOperation.instructionSourceParameterTokens = (const srcParameterToken* const)(&dstParameter + 1);
 	newWriteOperation.operationWriteMask = writeMask;
 	thisRegWriteState.writeOperations.push_back(newWriteOperation);
 

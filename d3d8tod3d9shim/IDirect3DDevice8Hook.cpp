@@ -1044,66 +1044,67 @@ static inline void CopyModifyVertShaderBytecode(DWORD* pFunction, std::vector<DW
 		version.minorVersion = 1;
 	}
 
-	// Fix up writing to all channels of output registers by modifying their dstParameter write masks.
-	// This is necessary because in D3D8 vs_1_0 and D3D8 vs_1_1 it was legal to leave some of the output registers' channels unwritten.
-	// However, D3D9 shaders will fail validation if not all of the components are written to (until D3D9 SM3.0 when they re-added this feature).
 	const unsigned numWrittenOutputRegs = originalShaderInfo.writtenOutputRegisters.size();
 	for (unsigned x = 0; x < numWrittenOutputRegs; ++x)
 	{
 		const WrittenOutputRegister& writtenOutputReg = originalShaderInfo.writtenOutputRegisters[x];
 
-		if (writtenOutputReg.registerType == D3DSPR_RASTOUT && writtenOutputReg.componentChannelsWritten < 0xF)
+		// Fix up writing to all channels of the oPos, oFog, and oPts registers by modifying their dstParameter write masks.
+		// This is necessary because in D3D8 vs_1_0 and D3D8 vs_1_1 it was legal to leave some of the output position registers' channels unwritten.
+		// However, D3D9 shaders will fail validation if not all of the components are written to (until D3D9 SM3.0 when they re-added this feature).
+		if (writtenOutputReg.registerType == D3DSPR_RASTOUT 
+			&& writtenOutputReg.componentChannelsWritten < 0xF)
 		{
 			const unsigned numWriteOperations = writtenOutputReg.writeOperationsHistory.size();
-			const outputRegisterWriteTracker::outputRegisterWriteOperation& writeOperation = writtenOutputReg.writeOperationsHistory[numWriteOperations - 1];
+			const outputRegisterWriteTracker::outputRegisterWriteOperation& lastWriteOperation = writtenOutputReg.writeOperationsHistory[numWriteOperations - 1];
 
 			// Change the dstParameter's write mask from whatever it was (less than 0xF) to write all channels (0xF) by writing in the missing channels
 			switch (writtenOutputReg.componentChannelsWritten)
 			{
 			case 0x0: // Written nothing, needs to write everything!
-				*(DWORD* const)writeOperation.registerParameterToken |= D3DSP_WRITEMASK_ALL;
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= D3DSP_WRITEMASK_ALL;
 				break;
 			case 0x1: // Just .x is written, we need to add .yzw
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
 				break;
 			case 0x2: // Just .y is written, we need to add .xzw
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
 				break;
 			case 0x3: // Just .xy is written, we need to add .zw
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_2 | D3DSP_WRITEMASK_3);
 				break;
 			case 0x4: // Just .z is written, we need to add .xyw
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_3);
 				break;
 			case 0x5: // Just .xz is written, we need to add .yw
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_3);
 				break;
 			case 0x6: // Just .yz is written, we need to add .xw
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_3);
 				break;
 			case 0x7: // .xyz is written, only .w is missing
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_3);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_3);
 				break;
 			case 0x8: // Just .w is written, we need to add .xyz
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2);
 				break;
 			case 0x9: // Just .xw is written, we need to add .yz
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_1 | D3DSP_WRITEMASK_2);
 				break;
 			case 0xA: // Just .yw is written, we need to add .xz
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_2);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_2);
 				break;
 			case 0xB: // .xyw is written, only .z is missing
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_2);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_2);
 				break;
 			case 0xC: // Just .zw is written, we need to add .xy
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0 | D3DSP_WRITEMASK_1);
 				break;
 			case 0xD: // .xzw is written, only .y is missing
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_1);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_1);
 				break;
 			case 0xE: // .yzw is written, only .x is missing
-				*(DWORD* const)writeOperation.registerParameterToken |= (D3DSP_WRITEMASK_0);
+				*(DWORD* const)lastWriteOperation.registerParameterToken |= (D3DSP_WRITEMASK_0);
 				break;
 			case 0xF: // Should never be here, but do nothing!
 #ifdef _DEBUG
@@ -1112,6 +1113,88 @@ static inline void CopyModifyVertShaderBytecode(DWORD* pFunction, std::vector<DW
 				__assume(0);
 #endif
 				break;
+			}
+		}
+
+		// Fix up differences between D3D8 validator and D3D9 validator:
+		// The D3D8 validator relaxes the write mask requirements on scalar output registers (oFog and oPts), which state that a replicate swizzle must be used
+		// This results in failing D3D9 shader validation rule X430:
+		// Direct3D9: Shader Validator: X430: (Instruction Error) (Statement %d) When writing to scalar output register, %s instruction must use replicate swizzle on source parameter(s), in order to select single component. i.e. .x | .y | .z | .w (or rgba equivalent)
+		if (writtenOutputReg.registerType == D3DSPR_RASTOUT 
+			&& (writtenOutputReg.registerIndex == D3DSRO_FOG || writtenOutputReg.registerIndex == D3DSRO_POINT_SIZE) )
+		{
+			const unsigned numWriteOperations = writtenOutputReg.writeOperationsHistory.size();
+			for (unsigned x = 0; x < numWriteOperations; ++x)
+			{
+				const outputRegisterWriteTracker::outputRegisterWriteOperation& writeOperation = writtenOutputReg.writeOperationsHistory[x];
+				unsigned numSourceParametersExpected = 0;
+				switch (ShaderInfo::GetOpcodeDisplayType( (const D3DSHADER_INSTRUCTION_OPCODE_TYPE)(writeOperation.writeInstruction->opcode) ) )
+				{
+				case justOpcode:
+				case dstOnly:
+				case customOpcode:
+					numSourceParametersExpected = 0;
+					break;
+				case srcOnly:
+				case srcDst:
+					numSourceParametersExpected = 1;
+					break;
+				case srcSrcOnly:
+				case srcSrcDst:
+					numSourceParametersExpected = 2;
+					break;
+				case srcSrcSrcDst:
+					numSourceParametersExpected = 3;
+					break;
+				case srcSrcSrcSrcDst:
+					numSourceParametersExpected = 4;
+					break;
+				}
+
+				const srcParameterToken* currentSourceParameterToken = writeOperation.instructionSourceParameterTokens;
+				for (unsigned x = 0; x < numSourceParametersExpected; ++x)
+				{
+					switch (currentSourceParameterToken->GetChannelSwizzleXYZW() )
+					{
+					// These are fine
+					case D3DSP_REPLICATERED >> D3DSP_SWIZZLE_SHIFT:
+					case D3DSP_REPLICATEGREEN >> D3DSP_SWIZZLE_SHIFT:
+					case D3DSP_REPLICATEBLUE >> D3DSP_SWIZZLE_SHIFT:
+					case D3DSP_REPLICATEALPHA >> D3DSP_SWIZZLE_SHIFT:
+						break;
+
+					// This is not fine. We now need to modify the replicate-swizzle
+					default:
+					{
+						const unsigned char originalFirstSwizzleElement = currentSourceParameterToken->GetChannelSwizzle();
+						const_cast<srcParameterToken*>(currentSourceParameterToken)->internalRawToken &= (~D3DSP_SWIZZLE_MASK); // Clear the swizzle mask to .xxxx
+						switch (originalFirstSwizzleElement)
+						{
+						case 0: // .x
+							const_cast<srcParameterToken*>(currentSourceParameterToken)->internalRawToken |= D3DSP_REPLICATERED; // .rrrr
+							break;
+						case 1: // .y
+							const_cast<srcParameterToken*>(currentSourceParameterToken)->internalRawToken |= D3DSP_REPLICATEGREEN; // .gggg
+							break;
+						case 2: // .z
+							const_cast<srcParameterToken*>(currentSourceParameterToken)->internalRawToken |= D3DSP_REPLICATEBLUE; // .bbbb
+							break;
+						case 3: // .w
+							const_cast<srcParameterToken*>(currentSourceParameterToken)->internalRawToken |= D3DSP_REPLICATEALPHA; // .aaaa
+							break;
+						}
+					}
+						break;
+					}
+
+					if (currentSourceParameterToken->GetRelativeAddressingType() == D3DSHADER_ADDRMODE_RELATIVE)
+					{
+						// Skip the relative addressing token since that does not participate in source parameter swizzles
+						++currentSourceParameterToken;
+					}
+
+					++currentSourceParameterToken;
+				}
 			}
 		}
 	}
@@ -1157,7 +1240,7 @@ arrivedAtFirstInstruction:
 
 			// Source on the bytecode format for shader DCL instructions comes from: https://msdn.microsoft.com/en-us/library/windows/hardware/ff549176(v=vs.85).aspx
 			instructionToken dclInstruction = {0};
-			dclInstruction.opcode = D3DSIO_DCL;
+			dclInstruction.opcode = _D3DSIO_DCL;
 			outputBytecode.push_back(*(const DWORD* const)&dclInstruction);
 
 			DWORD dclToken = thisRegMapping.usageType & D3DSP_DCL_USAGE_MASK;
@@ -1183,7 +1266,7 @@ arrivedAtFirstInstruction:
 
 			// Source on the bytecode format for shader DEF instructions comes from: https://msdn.microsoft.com/en-us/library/windows/hardware/ff552693(v=vs.85).aspx
 			instructionToken defInstruction = {0};
-			defInstruction.opcode = D3DSIO_DEF;
+			defInstruction.opcode = _D3DSIO_DEF;
 			outputBytecode.push_back(*(const DWORD* const)&defInstruction);
 
 			DWORD destParameter = (D3DSPR_CONST << D3DSP_REGTYPE_SHIFT) & D3DSP_REGTYPE_MASK;
@@ -1218,7 +1301,7 @@ arrivedAtFirstInstruction:
 			continue;
 		}
 
-		dstParameterToken* const dstParameter = (dstParameterToken* const)(pFunction + 1);
+		dstParameterToken* const dstParameter = (dstParameterToken* const)(pFunction + 1);		
 
 		// Fix up difference between D3D8 validator and D3D9 validator:
 		// The D3D8 validator relaxes the write mask requirements on the matrix multiply (MAxB) instructions, so we need
@@ -1324,7 +1407,7 @@ arrivedAtFirstInstruction:
 	}
 
 	instructionToken endToken = {0};
-	endToken.opcode = D3DSIO_END;
+	endToken.opcode = _D3DSIO_END;
 	outputBytecode.push_back(*(const DWORD* const)&endToken);
 }
 
@@ -1388,6 +1471,9 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::CreateVerte
 			HANDLE hF = CreateFileA("failedOriginalVS.vso", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 			if (hF == INVALID_HANDLE_VALUE)
 				return hr;
+
+			std::vector<DWORD> newShaderBytecode2;
+			CopyModifyVertShaderBytecode(&(oldShaderBytecodeCopy.front() ), newShaderBytecode2, originalShaderInfo, constFloatRegs, declRegisterMapping);
 
 			const DWORD* dwReadPtr = pFunction;
 			DWORD numBytesWritten = 0;

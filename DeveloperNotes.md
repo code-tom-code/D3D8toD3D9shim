@@ -59,6 +59,21 @@ In vs_1_0 (and possibly the whole D3D8 validator) it was possible to create vert
 
 In order to correct this problem, we use the ShaderAnalysis library to walk the shader bytecode's tokens, and when we find partial writes to the [Output (o#) Registers](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-vs-registers-output) (that is, instructions with the output registers as Destination Parameters), we can then modify the [Destination Parameter Token](https://docs.microsoft.com/en-us/windows-hardware/drivers/display/destination-parameter-token)'s partial [Write Mask](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-vs-registers-modifiers-masking#destination-register-masking-1) to include the missing channels. This step is only performed for output registers that have already been detected as having missing channel writes, and since we're only ever writing to the missing channels and not the existing ones, this change won't stomp valid data if the shader writes into the same output register multiple times from different instructions.
 
+### Validation: Scalar Output Register Replicate Swizzles
+
+This is yet another case wherein the D3D8 shader validator was not as strict as the D3D9 shader validator. vs_1_0 thru vs_2_x have access to two scalar output registers, those being the [Fog Register (oFog)](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-vs-registers-fog) and the [Point Size Register (oPts)](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-vs-registers-point-size). The rules state that writes to these scalar output registers require a replicate swizzle on all source parameters (the source parameters may use different replicate swizzles from one another, but they must all be using some replicate swizzle). Violating this rule results in the following D3D9 error in debug mode:
+```
+Direct3D9: Shader Validator: X430: (Instruction Error) (Statement %d) When writing to scalar output register, %s instruction must use replicate swizzle on source parameter(s), in order to select single component. i.e. .x | .y | .z | .w (or rgba equivalent)
+```
+An example of this from a real world vs_1_1 shader is:
+```
+mad oFog, -r5, c54.z, c54.w
+```
+Shader Analysis is used to detect writes to output registers already, so these tracked writes are used to walk the instruction's source parameters and correct their source swizzles by using the [Replicate Swizzle](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-ps-registers-modifiers-source-register-swizzling#replicate-swizzle) that corresponds to the first used source swizzle (so `.xyzw` would become `.xxxx` and `.wyxz` would become `.wwww` and so on). The corrected shader-code is thus:
+```
+mad oFog, -r5.xxxx, c54.z, c54.w
+```
+
 ### Validation: Input Register Dcl's
 
 Direct3D 9 [requires](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-vs-registers-vs-1-1) that all vertex shader [Input (v#) Registers](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dx9-graphics-reference-asm-vs-registers-input) are Declared in the vertex shader (using the [DCL pseudoinstruction](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dcl-usage-input-register---vs)). [DCL](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dcl-usage-input-register---vs) is very strange, as it appears to act like instruction, but it is actually has [its own bytecode format](https://docs.microsoft.com/en-us/windows-hardware/drivers/display/dcl-instruction) separate from the usual instruction opcode format. Either vs_1_0 or D3D8 (or both) did not require these declarations to be present, and so because there are some vertex shaders without input register declarations we need to insert new [DCL Tokens](https://docs.microsoft.com/en-us/windows-hardware/drivers/display/dcl-instruction) into the shader bytecode stream (after using ShaderAnalysis to detect when input registers are missing a declaration).

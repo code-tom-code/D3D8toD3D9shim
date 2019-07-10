@@ -30,6 +30,7 @@ struct IDirect3DVolume8Hook;
 struct IDirect3DVolume9;
 struct IDirect3DVolumeTexture8Hook;
 struct IDirect3DVolumeTexture9;
+struct IDirect3DVertexDeclaration9;
 
 void InitObjectMap();
 void DestroyObjectMap();
@@ -46,7 +47,7 @@ IDirect3DSurface8Hook* ObjLookupCreate(IDirect3DSurface9* ptr, IDirect3DDevice8H
 IDirect3DSwapChain8Hook* ObjLookupCreate(IDirect3DSwapChain9* ptr, IDirect3DDevice8Hook* parent);
 IDirect3DTexture8Hook* ObjLookupCreate(IDirect3DTexture9* ptr, IDirect3DDevice8Hook* parent);
 IDirect3DVertexBuffer8Hook* ObjLookupCreate(IDirect3DVertexBuffer9* ptr, IDirect3DDevice8Hook* parent);
-IDirect3DVertexShader8Hook* ObjLookupCreate(IDirect3DVertexShader9* ptr, IDirect3DDevice8Hook* parent);
+IDirect3DVertexShader8Hook* ObjLookupCreate(IDirect3DVertexShader9* ptr, IDirect3DVertexDeclaration9* declptr, IDirect3DDevice8Hook* parent);
 IDirect3DVolume8Hook* ObjLookupCreate(IDirect3DVolume9* ptr, IDirect3DDevice8Hook* parent);
 IDirect3DVolumeTexture8Hook* ObjLookupCreate(IDirect3DVolumeTexture9* ptr, IDirect3DDevice8Hook* parent);
 

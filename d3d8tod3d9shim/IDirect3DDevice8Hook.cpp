@@ -868,6 +868,67 @@ struct vertDeclRegisterMapping
 	BYTE usageIndex;
 };
 
+union debuggableDecl8
+{
+	DWORD rawDWORD;
+
+	struct _nopToken
+	{
+		DWORD empty : 29;
+		D3DVSD_TOKENTYPE tokenType : 3;
+	} nopToken;
+
+	struct _streamNumToken
+	{
+		DWORD streamNum : 4;
+		DWORD empty : 24;
+		DWORD isTessellatorStream : 1;
+		D3DVSD_TOKENTYPE tokenType : 3;
+	} streamNumToken;
+
+	struct _streamDataToken
+	{
+		DWORD registerIndex : 5; // offset 0 bits
+		DWORD empty : 11;
+		D3DDECLTYPE dataType : 4; // offset 16 bits
+		DWORD empty2 : 8;
+		DWORD doSkip : 1; // offset 28 bits
+		D3DVSD_TOKENTYPE tokenType : 3; // offset 29 bits
+	} streamDataToken;
+
+	struct _streamDataSkipToken
+	{
+		DWORD registerIndex : 5; // offset 0 bits
+		DWORD empty : 11;
+		DWORD skipNum : 4; // offset 16 bits
+		DWORD empty2 : 8;
+		DWORD doSkip : 1; // offset 28 bits
+		D3DVSD_TOKENTYPE tokenType : 3; // offset 29 bits
+	} streamDataSkipToken;
+
+	struct _constMemToken
+	{
+		DWORD registerBaseAddress : 7;
+		DWORD empty : 18;
+		DWORD numConstRegisters : 4;
+		D3DVSD_TOKENTYPE tokenType : 3;
+	} constMemToken;
+
+	struct _extToken
+	{
+		DWORD empty : 24;
+		DWORD extensionSizeDWORDs : 5;
+		D3DVSD_TOKENTYPE tokenType : 3;
+	} extToken;
+
+	struct _endToken
+	{
+		DWORD empty : 29;
+		D3DVSD_TOKENTYPE tokenType : 3;
+	} endToken;
+};
+static_assert(sizeof(debuggableDecl8) == sizeof(DWORD), "Error: Unexpected struct size");
+
 static inline void ConvertVertexDecl8to9(const DWORD* inDecl8, std::vector<D3DVERTEXELEMENT9>& outDecl9, std::vector<constFloatReg>& constFloatRegs, std::vector<vertDeclRegisterMapping>& declRegisterMapping)
 {
 	// This is the current stream for our vertex declaration
@@ -925,6 +986,9 @@ static inline void ConvertVertexDecl8to9(const DWORD* inDecl8, std::vector<D3DVE
 
 	while (*inDecl8 != D3DVSD_END() )
 	{
+		debuggableDecl8 currentDecl8;
+		currentDecl8.rawDWORD = *inDecl8;
+
 		const D3DVSD_TOKENTYPE type = (const D3DVSD_TOKENTYPE)( (*inDecl8 & D3DVSD_TOKENTYPEMASK) >> D3DVSD_TOKENTYPESHIFT);
 
 		switch (type)
@@ -1019,7 +1083,7 @@ static inline void CopyModifyVertShaderBytecode(DWORD* pFunction, std::vector<DW
 {
 	versionToken version = *(const versionToken* const)pFunction++;
 
-	if (version.pixelOrVertexShader != 0xFFFE)
+	if (version.pixelOrVertexShader != (D3DVS_VERSION(0, 0) >> 16) )
 	{
 #ifdef _DEBUG
 		// Not a vertex shader!
@@ -1411,6 +1475,257 @@ arrivedAtFirstInstruction:
 	outputBytecode.push_back(*(const DWORD* const)&endToken);
 }
 
+static inline void CopyModifyPixelShaderBytecode(const DWORD* const pOriginalFunction, std::vector<DWORD>& outputBytecode, const ShaderInfo& originalShaderInfo)
+{
+	versionToken version = *(const versionToken* const)pOriginalFunction;
+
+	if (version.pixelOrVertexShader != (D3DPS_VERSION(0, 0) >> 16) )
+	{
+#ifdef _DEBUG
+		// Not a pixel shader!
+		__debugbreak();
+#endif
+		return;
+	}
+
+	if (version.majorVersion != 1)
+	{
+#ifdef _DEBUG
+		// Not ps_1_x shader!
+		__debugbreak();
+#endif
+		return;
+	}
+
+	// Before we make any edits to the shader bytecode, we need to copy it into another vector
+	const DWORD* pOriginalShaderBytecode = pOriginalFunction;
+	std::vector<DWORD> originalFunctionBytecode;
+	while (*pOriginalShaderBytecode != D3DSIO_END)
+	{
+		originalFunctionBytecode.push_back(*pOriginalShaderBytecode);
+		++pOriginalShaderBytecode;
+	}
+	originalFunctionBytecode.push_back(D3DSIO_END);
+
+	DWORD* pFunction = &originalFunctionBytecode.front();
+	++pFunction;
+
+	if (version.minorVersion < 1)
+	{
+		// Fixup the version from ps_1_0 to ps_1_1 because D3D9 no longer
+		// accepts ps_1_0 shaders, whereas D3D8 does support ps_1_0 shaders.
+		version.minorVersion = 1;
+	}
+
+	outputBytecode.push_back(*(const DWORD* const)&version);
+	while (*pFunction != D3DSIO_END) // End token is special
+	{
+		const instructionToken rawInstructionToken = *(const instructionToken* const)pFunction;
+		const D3DSHADER_INSTRUCTION_OPCODE_TYPE opcode = (const D3DSHADER_INSTRUCTION_OPCODE_TYPE)(rawInstructionToken.opcode);
+
+		switch (opcode)
+		{
+		case D3DSIO_COMMENT:
+		{
+			const DWORD commentSize = (*pFunction & D3DSI_COMMENTSIZE_MASK) >> D3DSI_COMMENTSIZE_SHIFT;
+			outputBytecode.push_back(*pFunction++);
+
+			for (unsigned x = 0; x < commentSize; ++x)
+				outputBytecode.push_back(*pFunction++);
+		}
+			break;
+		default:
+			goto arrivedAtFirstInstruction;
+		}
+	}
+
+	// The first opcode after the version token and the comments and debug data:
+arrivedAtFirstInstruction:	
+
+	while (*pFunction != D3DSIO_END)
+	{
+		const instructionToken& currentInstruction = *(const instructionToken* const)pFunction;
+		if ( (currentInstruction.opcode == D3DSIO_COMMENT) && currentInstruction.instructionOrParameterMarkerBit == instructionTokenMarker) // Bit 31 must be set to 0x0 if this is indeed a COMMENT
+		{
+			outputBytecode.push_back(*pFunction); // COMMENT token
+
+			const DWORD numCommentDWORDs = (*pFunction & D3DSI_COMMENTSIZE_MASK) >> D3DSI_COMMENTSIZE_SHIFT;
+
+			++pFunction; // Advance to first comment data DWORD
+
+			for (unsigned x = 0; x < numCommentDWORDs; ++x)
+			{
+				outputBytecode.push_back(*pFunction);
+				++pFunction;
+			}
+			continue;
+		}
+
+		// Differences between D3D8 and D3D9 shader validator:
+		// In D3D9, ps_1_x shaders are not allowed to use any source register modifiers (negate, abs, bias, invert, negate, x2, or bx2) on constant registers. Note that the abs modifier is only available in Shader Model 3.0 and up.
+		unsigned numSourceParametersExpected = 0;
+		bool hasDstParameter = true;
+		switch (ShaderInfo::GetOpcodeDisplayType( (const D3DSHADER_INSTRUCTION_OPCODE_TYPE)(currentInstruction.opcode) ) )
+		{
+		case justOpcode:
+		case dstOnly:
+		case customOpcode:
+			numSourceParametersExpected = 0;
+			hasDstParameter = false;
+			break;
+		case srcOnly:
+			hasDstParameter = false;
+			// Intentional fall-through
+		case srcDst:
+			numSourceParametersExpected = 1;
+			break;
+		case srcSrcOnly:
+			hasDstParameter = false;
+			// Intentional fall-through
+		case srcSrcDst:
+			numSourceParametersExpected = 2;
+			break;
+		case srcSrcSrcDst:
+			numSourceParametersExpected = 3;
+			break;
+		case srcSrcSrcSrcDst:
+			numSourceParametersExpected = 4;
+			break;
+		}
+
+		bool constModifierDetected = false;
+		srcParameterToken sourceParameterTokensCopy[3];
+		const srcParameterToken* currentSourceParameterTokens = (const srcParameterToken* const)(pFunction + 2);
+		for (unsigned x = 0; x < numSourceParametersExpected; ++x)
+		{
+			srcParameterToken& currentSourceParameterToken = sourceParameterTokensCopy[x];
+			currentSourceParameterToken = currentSourceParameterTokens[x];
+			if (currentSourceParameterToken.GetRegisterType() == D3DSPR_CONST && currentSourceParameterToken.GetSourceModifiersUnshifted() != D3DSPSM_NONE)
+			{
+				constModifierDetected = true;
+				break;
+			}
+		}
+
+		if (constModifierDetected)
+		{
+			// Firstly strip any source modifiers that aren't negate
+			for (unsigned x = 0; x < numSourceParametersExpected; ++x)
+			{
+				// TODO: Perform def modification here for const literals (first try adding more constregs for literals, if possible, then just modify the existing constreg literals if there's no room left)
+				if (sourceParameterTokensCopy[x].GetRegisterType() == D3DSPR_CONST && 
+					sourceParameterTokensCopy[x].GetSourceModifiersUnshifted() != D3DSPSM_NONE)
+				{
+					switch (sourceParameterTokensCopy[x].GetSourceModifiersUnshifted() )
+					{
+					default:
+#ifdef _DEBUG
+						__debugbreak(); // Unknown source modifier
+#endif
+					case D3DSPSM_NONE:
+#ifdef _DEBUG
+						__debugbreak(); // Should never be here...
+#endif
+						break;
+					case D3DSPSM_NEG:
+						// This one we can do some interesting stuff with, like changing the operation from ADD to SUB and vice-versa
+						break;
+					case D3DSPSM_BIAS: // x - 0.5f
+					case D3DSPSM_BIASNEG: // -1 * (x - 0.5f)
+					case D3DSPSM_SIGN: // bx2 is: 2 * (x - 0.5f)
+					case D3DSPSM_SIGNNEG: // negbx2 is: -2 * (x - 0.5f)
+					case D3DSPSM_COMP: // 1.0f - x
+					case D3DSPSM_X2: // 2.0 * x
+					case D3DSPSM_X2NEG: // -2.0 * x
+					case D3DSPSM_DZ: /* x' = x/z ( x' = 1.0 if z == 0)
+										y' = y/z ( y' = 1.0 if z == 0)
+										z' is undefined
+										w' is undefined
+									 */
+					case D3DSPSM_DW: /* x' = x/w ( x' = 1.0 if w == 0)
+										y' = y/w ( y' = 1.0 if w == 0)
+										z' is undefined
+										w' is undefined
+									 */
+					case D3DSPSM_ABS: // abs(x)
+					case D3DSPSM_ABSNEG: // -abs(x)
+					case D3DSPSM_NOT: // !p0 (only usable on the predicate register)
+						break;
+					}
+
+					// Clear the existing source modifier on this source register token
+					sourceParameterTokensCopy[x].srcParameter.sourceModifier = SM_None;
+				}
+			}
+		}
+
+		// Write instruction token:
+		outputBytecode.push_back(*pFunction);
+
+		// Write dst parameter (if one exists)
+		if (hasDstParameter)
+		{
+			const dstParameterToken& currentDestParameterToken = *(const dstParameterToken* const)(pFunction + 1);
+			outputBytecode.push_back(*(const DWORD* const)&currentDestParameterToken);
+			++pFunction;
+		}
+
+		// Write source parameters:
+		for (unsigned x = 0; x < numSourceParametersExpected; ++x)
+		{
+			outputBytecode.push_back(*(const DWORD* const)(sourceParameterTokensCopy + x) );
+			++pFunction;
+		}
+
+		++pFunction;
+	}
+
+	instructionToken endToken = {0};
+	endToken.opcode = _D3DSIO_END;
+	outputBytecode.push_back(*(const DWORD* const)&endToken);
+}
+
+#ifdef _DEBUG
+static const bool DumpFailedShaderToDisk(const DWORD* const pOriginalUnmodifiedBytecode, const DWORD* const pModifiedShaderBytecode, const bool isPS)
+{
+	static const char* const failedOriginalShaderFilename[2] =
+	{
+		"failedOriginalVS.vso",
+		"failedOriginalPS.pso"
+	};
+	HANDLE hF = CreateFileA(failedOriginalShaderFilename[isPS], GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hF == INVALID_HANDLE_VALUE)
+		return false;
+
+	const DWORD* dwReadPtr = pOriginalUnmodifiedBytecode;
+	DWORD numBytesWritten = 0;
+	while (*dwReadPtr != D3DSIO_END)
+		WriteFile(hF, dwReadPtr++, sizeof(DWORD), &numBytesWritten, NULL);
+	WriteFile(hF, dwReadPtr, sizeof(DWORD), &numBytesWritten, NULL);
+
+	CloseHandle(hF);
+
+	static const char* const failedConvertedD3D9ShaderFilename[2] =
+	{
+		"failedD3D9VS.vso",
+		"failedD3D9PS.pso"
+	};
+
+	hF = CreateFileA(failedConvertedD3D9ShaderFilename[isPS], GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hF == INVALID_HANDLE_VALUE)
+		return false;
+
+	dwReadPtr = pModifiedShaderBytecode;
+	numBytesWritten = 0;
+	while (*dwReadPtr != D3DSIO_END)
+		WriteFile(hF, dwReadPtr++, sizeof(DWORD), &numBytesWritten, NULL);
+	WriteFile(hF, dwReadPtr, sizeof(DWORD), &numBytesWritten, NULL);
+
+	CloseHandle(hF);
+	return true;
+}
+#endif
+
 COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::CreateVertexShader(THIS_ CONST DWORD* pDeclaration,CONST DWORD* pFunction,DWORD* pHandle,DWORD Usage)
 {
 	if (!pHandle)
@@ -1468,32 +1783,13 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::CreateVerte
 		if (FAILED(hr) )
 		{
 #ifdef _DEBUG
-			HANDLE hF = CreateFileA("failedOriginalVS.vso", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (hF == INVALID_HANDLE_VALUE)
-				return hr;
-
+			// Modify the original D3D8 shader bytecode again so that we can debug-step through the conversion process to find out what went wrong!
 			std::vector<DWORD> newShaderBytecode2;
 			CopyModifyVertShaderBytecode(&(oldShaderBytecodeCopy.front() ), newShaderBytecode2, originalShaderInfo, constFloatRegs, declRegisterMapping);
 
-			const DWORD* dwReadPtr = pFunction;
-			DWORD numBytesWritten = 0;
-			while (*dwReadPtr != D3DSIO_END)
-				WriteFile(hF, dwReadPtr++, sizeof(DWORD), &numBytesWritten, NULL);
-			WriteFile(hF, dwReadPtr, sizeof(DWORD), &numBytesWritten, NULL);
-
-			CloseHandle(hF);
-
-			hF = CreateFileA("failedD3D9VS.vso", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (hF == INVALID_HANDLE_VALUE)
-				return hr;
-
-			dwReadPtr = &(newShaderBytecode.front() );
-			numBytesWritten = 0;
-			while (*dwReadPtr != D3DSIO_END)
-				WriteFile(hF, dwReadPtr++, sizeof(DWORD), &numBytesWritten, NULL);
-			WriteFile(hF, dwReadPtr, sizeof(DWORD), &numBytesWritten, NULL);
-
-			CloseHandle(hF);
+			// Dump the failing original D3D8 shader and modified D3D9 shader bytecode to disk for disassembly + analysis
+			if (!DumpFailedShaderToDisk(pFunction, &newShaderBytecode.front(), false) )
+				return D3DERR_INVALIDCALL;
 #endif
 			return hr;
 		}
@@ -1516,6 +1812,7 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::SetVertexSh
 	if (Handle < 0xF0000)
 	{
 		d3d9dev->SetVertexDeclaration(NULL);
+		d3d9dev->SetVertexShader(NULL);
 		return d3d9dev->SetFVF(Handle);
 	}
 	else
@@ -1534,9 +1831,15 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::GetVertexSh
 
 	LPDIRECT3DVERTEXSHADER9 vs9 = NULL;
 	HRESULT ret = d3d9dev->GetVertexShader(&vs9);
+	LPDIRECT3DVERTEXDECLARATION9 decl9 = NULL;
+	ret |= d3d9dev->GetVertexDeclaration(&decl9);
 
 	if (vs9)
-		*pHandle = (const DWORD)vs9;
+	{
+		IDirect3DVertexShader8Hook* hook8 = ObjLookupCreate(vs9, decl9, this);
+		hook8->AddRef();
+		*pHandle = (const DWORD)hook8;
+	}
 	else
 		return d3d9dev->GetFVF(pHandle);
 
@@ -1615,53 +1918,35 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::CreatePixel
 	if (!pFunction)
 		return d3d9dev->CreatePixelShader(NULL, (LPDIRECT3DPIXELSHADER9*)pHandle);
 
-	std::vector<DWORD> modifiedBytecode;
-	const DWORD* pFunctionCopy = pFunction;
-	while (*pFunctionCopy != D3DSIO_END)
-		modifiedBytecode.push_back(*pFunctionCopy++);
-	modifiedBytecode.push_back(*pFunctionCopy); // Copy the END token too
-
-	// Modify the shader minor version to be at least 1.
-	// This is because D3D9 does not support ps_1_0, whereas D3D8 does support ps_1_0.
-	versionToken* const versionPtr = (versionToken* const)&(modifiedBytecode.front() );
-	if (versionPtr->minorVersion < 1)
-		versionPtr->minorVersion = 1;
-
 	// TODO: Do we have to do any of the "crazier" shader bytecode modifications to pass shader validation for pixel shaders like
 	// we do for vertex shaders? (Destination register masking, source register replicate swizzles, etc.)
 
+	// Gotta make sure that ADD with a negative constant register gets turned into a SUB instead.
+	// Modifiers are not allowed on constants for ps_1_4.
+
+	ShaderInfo originalShaderInfo;
+	DisasmAndAnalyzeShader(pFunction, originalShaderInfo
 #ifdef _DEBUG
-	ShaderInfo shaderInfo;
-	DisasmAndAnalyzeShader(&(modifiedBytecode.front() ), shaderInfo, "NonePS");
+		, "NonePS"
 #endif
+	);
+
+	std::vector<DWORD> modifiedBytecode;
+	CopyModifyPixelShaderBytecode(pFunction, modifiedBytecode, originalShaderInfo);
+
+#ifdef _DEBUG
+	ShaderInfo modifiedShaderInfo;
+	DisasmAndAnalyzeShader(&(modifiedBytecode.front() ), modifiedShaderInfo, "D3D9PS");
+#endif
+
 	LPDIRECT3DPIXELSHADER9 ps9 = NULL;
 	HRESULT ret = d3d9dev->CreatePixelShader(&(modifiedBytecode.front() ), &ps9);
 	if (FAILED(ret) )
 	{
 #ifdef _DEBUG
-		HANDLE hF = CreateFileA("failedOriginalPS.pso", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hF == INVALID_HANDLE_VALUE)
-			return ret;
-
-		const DWORD* dwReadPtr = pFunction;
-		DWORD numBytesWritten = 0;
-		while (*dwReadPtr != D3DSIO_END)
-			WriteFile(hF, dwReadPtr++, sizeof(DWORD), &numBytesWritten, NULL);
-		WriteFile(hF, dwReadPtr, sizeof(DWORD), &numBytesWritten, NULL);
-
-		CloseHandle(hF);
-
-		hF = CreateFileA("failedD3D9PS.pso", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hF == INVALID_HANDLE_VALUE)
-			return ret;
-
-		dwReadPtr = &(modifiedBytecode.front() );
-		numBytesWritten = 0;
-		while (*dwReadPtr != D3DSIO_END)
-			WriteFile(hF, dwReadPtr++, sizeof(DWORD), &numBytesWritten, NULL);
-		WriteFile(hF, dwReadPtr, sizeof(DWORD), &numBytesWritten, NULL);
-
-		CloseHandle(hF);
+		// Dump the failing original D3D8 shader and modified D3D9 shader bytecode to disk for disassembly + analysis
+		if (!DumpFailedShaderToDisk(pFunction, &modifiedBytecode.front(), true) )
+			return D3DERR_INVALIDCALL;
 #endif
 		return ret;
 	}
@@ -1679,6 +1964,8 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::SetPixelSha
 	if (!pshook)
 		return d3d9dev->SetPixelShader(NULL);
 
+	pshook->AddRef();
+
 	return d3d9dev->SetPixelShader(pshook->GetUnderlyingPixelShader() );
 }
 
@@ -1692,8 +1979,17 @@ COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE IDirect3DDevice8Hook::GetPixelSha
 	if (FAILED(ret) )
 		return ret;
 
-	IDirect3DPixelShader8Hook* pshook = ObjLookupCreate(ps9, this);
-	*pHandle = (const DWORD)pshook;
+	if (ps9)
+	{
+		IDirect3DPixelShader8Hook* pshook = ObjLookupCreate(ps9, this);
+		*pHandle = (const DWORD)pshook;
+		pshook->AddRef();
+	}
+	else
+	{
+		*pHandle = 0x00000000;
+	}
+
 	return ret;
 }
 

@@ -321,7 +321,7 @@ IDirect3DVertexBuffer8Hook* ObjLookupCreate(IDirect3DVertexBuffer9* ptr, IDirect
 	return NewHook;
 }
 
-/*IDirect3DVertexShader8Hook* ObjLookupCreate(IDirect3DVertexShader9* ptr, IDirect3DDevice8Hook* parent)
+IDirect3DVertexShader8Hook* ObjLookupCreate(IDirect3DVertexShader9* ptr, IDirect3DVertexDeclaration9* declptr, IDirect3DDevice8Hook* parent)
 {
 	if (!ptr)
 		return NULL;
@@ -336,10 +336,10 @@ IDirect3DVertexBuffer8Hook* ObjLookupCreate(IDirect3DVertexBuffer9* ptr, IDirect
 	}
 
 	void* NewHookMemory = Alloc(sizeof(IDirect3DVertexShader8Hook) );
-	IDirect3DVertexShader8Hook* NewHook = new (NewHookMemory) IDirect3DVertexShader8Hook(ptr, parent);
+	IDirect3DVertexShader8Hook* NewHook = new (NewHookMemory) IDirect3DVertexShader8Hook(ptr, declptr, parent);
 	parent->VertexShaders.insert(std::make_pair(ptr, NewHook) );
 	return NewHook;
-}*/
+}
 
 IDirect3DVolume8Hook* ObjLookupCreate(IDirect3DVolume9* ptr, IDirect3DDevice8Hook* parent)
 {

@@ -142,6 +142,20 @@ add r0.zw, r0.x, -r0.x ; Newly assembled ADD instruction that does nothing but c
 mov oPos0, r0
 ```
 
+### Validation: Pixel Shader Source Register Modifiers on Constant Registers
+
+This is something that was only warned about in the D3D8 days:
+`
+Source register modifiers should not be used on constant registers because they will cause undefined results.
+`
+However D3D9 seems to have adopted the ps_1_4 validation rule for all ps_1_x shaders (but not for vs_1_x shaders):
+`
+For version 1_4, modifiers on constants are not allowed and will fail validation.
+`
+Because of this, we need to alter the shader bytecode to not use [Source Register Modifiers](https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx9-graphics-reference-asm-ps-registers-modifiers-source) on any constant registers. This works in a few different ways, although all of them do ultimately result in the source register modifiers simply being removed from the source parameter tokens and replaced with `D3DSPSM_NONE`. This ends up being the easiest way to solve the issue, but it typically results in pixel shaders with incorrect outputs. In the special case that a pixel shader is using a source register modifier on a constant register literal (that is, a constant register that is defined in the shader using the `DEF` instruction), then in that case shader analysis could be performed to determine if that is the sole usage of that constant register. If it is, then the source register modifier could be performed off-line on the constant literal instead of at run-time in the shader.
+
+One of the most common usages of source register modifiers with ps_1_x shaders is using the negate modifier with an `ADD` instruction. This can be transformed into an appropriate `SUB` instruction and the source register modifier removed (possibly also involving switching the two source register modifiers).
+
 ### Immediate Constants
 
 Unlike D3D9, which embeds shader Immediate Constants into its shader bytecode streams via [DEF Instructions](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/def---vs), D3D8 passes in Immediate Constant values as part of its D3D8 Vertex Declaration. You can read more about the structure and format of the D3D8 Vertex Declaration [here](https://github.com/code-tom-code/D3D8toD3D9shim/blob/master/d3d8tod3d9shim/originalD3D8/d3d8types.h#L610). Essentially while we're parsing the D3D8 Vertex Declaration, we scan the declaration bytestream looking for **D3DVSD_TOKEN_CONSTMEM**, which represent Immediate Constants. In order to convert vertex shaders with Immediate Constants in their D3D8 Vertex Declarations, we need to assemble some new [DEF Instructions](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/def---vs) at the beginning of our shader bytecode stream (inbetween the end of the [DCL Instruction](https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/dcl-usage-input-register---vs) section but before the first real shader instruction).
